@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+torch.manual_seed(42)
+
 
 class TransformerBlock(nn.Module):
     def __init__(self, embedding_size, num_heads):
@@ -203,6 +205,7 @@ def generate(
     model,
     starting_text,
     max_new_characters=100,
+    temperature=1.0,
 ):
     model.eval()
 
@@ -228,6 +231,10 @@ def generate(
             -1,
             :
         ]
+
+        next_token_logits = (
+            next_token_logits / temperature
+        )
 
         probabilities = torch.softmax(
             next_token_logits,
@@ -266,6 +273,7 @@ result = generate(
     model=model,
     starting_text="hello",
     max_new_characters=100,
+    temperature=3.0,
 )
 
 print(result)
