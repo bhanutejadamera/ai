@@ -197,3 +197,75 @@ for step in range(1000):
             f"step {step:4d} | "
             f"loss {loss.item():.4f}"
         )
+
+@torch.no_grad()
+def generate(
+    model,
+    starting_text,
+    max_new_characters=100,
+):
+    model.eval()
+
+    token_ids = torch.tensor([
+        [
+            char_to_id[char]
+            for char in starting_text
+        ]
+    ])
+
+    for _ in range(max_new_characters):
+
+        # Our model only supports sequences
+        # up to 64 characters long.
+        context = token_ids[:, -64:]
+
+        logits = model(context)
+
+        # We only care about the prediction
+        # from the final position.
+        next_token_logits = logits[
+            0,
+            -1,
+            :
+        ]
+
+        probabilities = torch.softmax(
+            next_token_logits,
+            dim=-1,
+        )
+
+        next_token_id = torch.multinomial(
+            probabilities,
+            num_samples=1,
+        )
+
+        next_token_id = next_token_id.reshape(
+            1,
+            1,
+        )
+
+        token_ids = torch.cat(
+            [
+                token_ids,
+                next_token_id,
+            ],
+            dim=1,
+        )
+
+    generated_text = "".join(
+        id_to_char[token_id.item()]
+        for token_id in token_ids[0]
+    )
+
+    return generated_text
+
+print()
+print("=== GENERATED TEXT ===")
+
+result = generate(
+    model=model,
+    starting_text="hello",
+    max_new_characters=100,
+)
+
+print(result)
